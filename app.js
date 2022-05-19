@@ -1,16 +1,39 @@
 const express = require("express");
+
 const bodyParser = require("body-parser");
+
 const mongoose = require("mongoose");
 
 const HttpError = require("./models/http-error");
+
 const usersRoutes = require("./routes/users-routes");
 const collectionsRoutes = require("./routes/collections-routes");
 const configRoutes = require("./routes/config-routes");
 const itemsRoutes = require("./routes/items-routes");
-
 const adminRoutes = require("./routes/admin-routes");
 
+const cors = require("cors");
+
+const { createServer } = require("http");
+const { Server } = require("socket.io");
+
 const app = express();
+
+const httpServer = createServer(app);
+
+const io = new Server(httpServer, {
+  cors: {
+    origin: "*",
+    allowedHeaders: [
+      "Origin",
+      "X-Requested-With",
+      "Content-Type",
+      "Accept",
+      "Authorization",
+    ],
+    methods: ["GET", "POST", "PATCH", "DELETE"],
+  },
+});
 
 app.use(bodyParser.json());
 
@@ -26,6 +49,10 @@ app.use((req, res, next) => {
   );
 
   next();
+});
+
+io.on("connection", (socket) => {
+  socket.on("send_comment", (data) => socket.emit("new_comment", data));
 });
 
 app.use("/api/users", usersRoutes);
@@ -44,7 +71,6 @@ app.use((req, res, next) => {
 });
 
 app.use((error, req, res, next) => {
-  // The res.headersSent property is a boolean property that indicates if the app sent HTTP headers for the response.
   if (res.headerSent) {
     return next(error);
   }
@@ -64,3 +90,5 @@ mongoose
   .catch((err) => {
     console.log(err);
   });
+
+httpServer.listen(process.env.PORT || 5001);
