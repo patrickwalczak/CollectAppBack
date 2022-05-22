@@ -17,13 +17,3 @@ const collectionItemSchema = new Schema({
 });
 
 module.exports = mongoose.model("CollectionItem", collectionItemSchema);
-
-/*
-User likes item --> user will have new Item Object.Id in likes array and CollectionItem will have new user Object.Id
-
-Collection item is being deleted --> I remove item and remove Collection Item Object.Id in the user likes array
-
-Collection is being deleted --> I remove all items and for rach removed Collection Item, I have to remove Object.Id in the user likes array
-
-User is being deleted --> I have to find all items which he liked and for rach removed user Object.id, I have to remove Object.Id in the user likes array
-*/

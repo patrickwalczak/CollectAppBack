@@ -122,6 +122,7 @@ const createCollection = async (req, res, next) => {
 const getCollectionsByUserId = async (req, res, next) => {
   const { userId } = req.params;
   let userAccount;
+
   try {
     userAccount = await User.findById(userId, "username").populate(
       "collections",
@@ -145,6 +146,7 @@ const getCollectionsByUserId = async (req, res, next) => {
     collections: userAccount.collections.map((collections) =>
       collections.toObject({ getters: true })
     ),
+    username: userAccount.username,
   });
 };
 
@@ -284,7 +286,7 @@ const getCollectionById = async (req, res, next) => {
 
   if (!collectionId) {
     const error = new HttpError("Collection ID was not provided.", 404);
-    next(error);
+    return next(error);
   }
 
   let collection;
@@ -306,7 +308,7 @@ const getCollectionById = async (req, res, next) => {
       "Something went wrong, could not find collection for provided ID.",
       404
     );
-    next(error);
+    return next(error);
   }
 
   res.status(200).json({ collection: collection.toObject({ getters: true }) });

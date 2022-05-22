@@ -10,6 +10,12 @@ router.get("/item/:itemId", itemsControllers.getItemById);
 
 router.get("/getLatestItems", itemsControllers.getLatestItems);
 
+router.get(
+  "/getFullTextSearchResults/:query",
+  [check("query").trim().isLength({ min: 1 })],
+  itemsControllers.getFullTextSearchResults
+);
+
 router.use(checkAuth);
 
 router.post(

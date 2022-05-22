@@ -19,12 +19,12 @@ const getUsers = async (req, res, next) => {
     return next(error);
   }
 
-  if (whoRequested.userType !== "admin") {
+  if (!whoRequested?.userType || whoRequested?.userType !== "admin") {
     const error = new HttpError("You don't have access to users data!", 400);
     return next(error);
   }
 
-  if (whoRequested.status === "blocked") {
+  if (!whoRequested?.status || whoRequested?.status === "blocked") {
     const error = new HttpError("Your account is blocked!", 400);
     return next(error);
   }
@@ -120,7 +120,7 @@ const deleteUsers = async (req, res, next) => {
     return next(error);
   }
 
-  if (whoRequested.userType !== "admin") {
+  if (!whoRequested?.userType || whoRequested?.userType !== "admin") {
     const error = new HttpError(
       "You are not allowed to delete user account!",
       400
@@ -128,7 +128,7 @@ const deleteUsers = async (req, res, next) => {
     return next(error);
   }
 
-  if (whoRequested.status === "blocked") {
+  if (!whoRequested?.status || whoRequested?.status === "blocked") {
     const error = new HttpError("Your account is blocked!", 400);
     return next(error);
   }
@@ -163,7 +163,6 @@ const deleteUsers = async (req, res, next) => {
     sess.startTransaction();
 
     usersToDelete.forEach(async (user) => {
-      await user.remove({ session: sess });
       await Collection.deleteMany({
         author: user.id,
       });
@@ -174,6 +173,9 @@ const deleteUsers = async (req, res, next) => {
         });
       }
     });
+    for await (const userToDelete of usersToDelete) {
+      await User.findByIdAndDelete(userToDelete.id);
+    }
     await sess.commitTransaction();
   } catch (err) {
     const error = new HttpError(

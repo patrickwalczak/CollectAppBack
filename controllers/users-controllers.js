@@ -45,7 +45,7 @@ const signup = async (req, res, next) => {
   }
 
   if (existingUser?.username === username) {
-    const error = new HttpError("This username is not available", 422);
+    const error = new HttpError("This username is not available.", 422);
     return next(error);
   }
 

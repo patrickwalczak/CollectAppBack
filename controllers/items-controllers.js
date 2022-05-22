@@ -181,7 +181,7 @@ const deleteItem = async (req, res, next) => {
   }
 
   const doEditorHaveItem = editor.collections.find(
-    (id) => id === item.belongsToCollection.toString()
+    ({ id }) => id === item.belongsToCollection.id
   );
 
   if (!doEditorHaveItem && editor.userType !== "admin") {
@@ -200,8 +200,10 @@ const deleteItem = async (req, res, next) => {
     item.belongsToCollection.numberOfItems =
       item.belongsToCollection.numberOfItems - 1;
     await item.belongsToCollection.save({ session: sess });
+
     await sess.commitTransaction();
   } catch (err) {
+    console.log(err);
     const error = new HttpError(
       "Something went wrong, could not delete collection.",
       500
@@ -215,28 +217,22 @@ const deleteItem = async (req, res, next) => {
 const getItemById = async (req, res, next) => {
   const { itemId } = req.params;
 
-  if (!itemId) {
-    const error = new HttpError("Item ID was not provided.", 404);
-    next(error);
-  }
-
   let item;
   try {
     item = await CollectionItem.findById(itemId, "-creationDate");
   } catch (err) {
     const error = new HttpError(
-      "Something went wrong, could not provide item.",
+      "Something went wrong, could not fetch item.",
       500
     );
     next(error);
   }
-
   if (!item) {
     const error = new HttpError(
       "Something went wrong, could not find item for provided ID.",
       404
     );
-    next(error);
+    return next(error);
   }
 
   res.status(200).json({ item: item.toObject({ getters: true }) });
@@ -249,7 +245,7 @@ const addComment = async (req, res, next) => {
 
   if (!itemId) {
     const error = new HttpError("Item ID was not provided.", 404);
-    next(error);
+    return next(error);
   }
 
   let creator;
@@ -380,7 +376,6 @@ const removeLike = async (req, res, next) => {
   }
 
   try {
-    collectionItem, user;
     const sess = await mongoose.startSession();
     sess.startTransaction();
     user.likes.pull(collectionItem);
@@ -435,6 +430,44 @@ const getLatestItems = async (req, res, next) => {
   });
 };
 
+const getFullTextSearchResults = async (req, res, next) => {
+  const { query } = req.params;
+  const errors = validationResult(req);
+
+  if (!errors.isEmpty()) {
+    return next(new HttpError("No search query was provided!", 404));
+  }
+
+  let items;
+  try {
+    items = await CollectionItem.aggregate([
+      {
+        $search: {
+          index: "collectionItemIndex",
+          text: {
+            query: query,
+            path: {
+              wildcard: "*",
+            },
+          },
+        },
+      },
+    ]);
+  } catch (err) {
+    console.log(err);
+    return next(new HttpError("Could not fetch results!", 404));
+  }
+
+  const convertedItems = items.map(({ _id, name }) => ({
+    id: _id.toString(),
+    name,
+  }));
+
+  res.status(201).json({
+    results: convertedItems,
+  });
+};
+
 exports.createItem = createItem;
 exports.editItem = editItem;
 exports.deleteItem = deleteItem;
@@ -443,3 +476,4 @@ exports.addComment = addComment;
 exports.likeItem = likeItem;
 exports.removeLike = removeLike;
 exports.getLatestItems = getLatestItems;
+exports.getFullTextSearchResults = getFullTextSearchResults;

@@ -15,44 +15,34 @@ const adminRoutes = require("./routes/admin-routes");
 const cors = require("cors");
 
 const { createServer } = require("http");
+
 const { Server } = require("socket.io");
 
 const app = express();
 
 const httpServer = createServer(app);
 
+app.use(cors());
+
+app.use(bodyParser.json());
+
 const io = new Server(httpServer, {
   cors: {
     origin: "*",
+    methods: ["GET", "POST", "DELETE", "PATCH"],
     allowedHeaders: [
       "Origin",
       "X-Requested-With",
       "Content-Type",
-      "Accept",
       "Authorization",
     ],
-    methods: ["GET", "POST", "PATCH", "DELETE"],
   },
 });
 
-app.use(bodyParser.json());
-
-app.use((req, res, next) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader(
-    "Access-Control-Allow-Headers",
-    "Origin, X-Requested-With, Content-Type, Accept, Authorization"
-  );
-  res.setHeader(
-    "Access-Control-Allow-Methods",
-    "GET, POST, PUT, PATCH, DELETE"
-  );
-
-  next();
-});
-
 io.on("connection", (socket) => {
-  socket.on("send_comment", (data) => socket.emit("new_comment", data));
+  socket.on("new_comment", (data) => {
+    io.emit("receive_comment", data);
+  });
 });
 
 app.use("/api/users", usersRoutes);
@@ -84,11 +74,9 @@ mongoose
   .connect(
     `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@${process.env.DB_NAME}.oqozi.mongodb.net/cmdb?retryWrites=true&w=majority`
   )
-  .then(() => {
-    app.listen(process.env.PORT || 5000);
-  })
+  .then(() => {})
   .catch((err) => {
     console.log(err);
   });
 
-httpServer.listen(process.env.PORT || 5001);
+httpServer.listen(process.env.PORT || 5000);
