@@ -8,9 +8,17 @@ const router = express.Router();
 
 router.use(checkAuth);
 
-router.patch("/updateUsersAccounts", adminControllers.updateUsersAccounts);
+router.patch(
+  "/updateUsersAccounts",
+  [check("users").isArray().isLength({ min: 1 })],
+  adminControllers.updateUsersAccounts
+);
 
-router.delete("/delete", adminControllers.deleteUsers);
+router.delete(
+  "/delete",
+  [check("users").isArray().isLength({ min: 1 })],
+  adminControllers.deleteUsers
+);
 
 router.post("/users", adminControllers.getUsers);
 

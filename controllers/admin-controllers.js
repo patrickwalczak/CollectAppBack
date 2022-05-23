@@ -4,6 +4,8 @@ const Collection = require("../models/collection");
 const CollectionItem = require("../models/collectionItem");
 const mongoose = require("mongoose");
 
+const { validationResult } = require("express-validator");
+
 const getUsers = async (req, res, next) => {
   const { userId: loggedUserId } = req.userData;
 
@@ -20,7 +22,40 @@ const getUsers = async (req, res, next) => {
   }
 
   if (!whoRequested?.userType || whoRequested?.userType !== "admin") {
-    const error = new HttpError("You don't have access to users data!", 400);
+    const error = new HttpError("You don't have access to users data!", 404);
+    return next(error);
+  }
+
+  if (!whoRequested?.status || whoRequested?.status === "blocked") {
+    const error = new HttpError("Your account is blocked!", 404);
+    return next(error);
+  }
+
+  res.json({ users: users.map((user) => user.toObject({ getters: true })) });
+};
+
+const updateUsersAccounts = async (req, res, next) => {
+  const errors = validationResult(req);
+  const { users, ...propertyToUpdate } = req.body;
+  const { userId: loggedUserId } = req.userData;
+
+  if (!errors.isEmpty()) {
+    return next(new HttpError("No user has been selected", 422));
+  }
+
+  let whoRequested;
+  try {
+    whoRequested = await User.findById(loggedUserId, "userType status");
+  } catch (err) {
+    const error = new HttpError(
+      "Something went wrong, could not update users accounts.",
+      500
+    );
+    return next(error);
+  }
+
+  if (!whoRequested?.userType || whoRequested?.userType !== "admin") {
+    const error = new HttpError("You cannot to edit users accounts!", 400);
     return next(error);
   }
 
@@ -29,45 +64,9 @@ const getUsers = async (req, res, next) => {
     return next(error);
   }
 
-  res.json({ users: users.map((user) => user.toObject({ getters: true })) });
-};
-
-const updateUsersAccounts = async (req, res, next) => {
-  const { users, ...propertyToUpdate } = req.body;
-  const { userId: loggedUserId } = req.userData;
-
-  if (!users.length) {
-    const error = new HttpError("None of the users have been selected!", 400);
-    return next(error);
-  }
-
-  let whoRequested;
-  try {
-    whoRequested = await User.findById(loggedUserId, "userType status");
-  } catch (err) {
-    const error = new HttpError(
-      "Something went wrong, could not update user account.",
-      500
-    );
-    return next(error);
-  }
-
-  if (whoRequested.userType !== "admin") {
-    const error = new HttpError(
-      "You don't have access to edit users accounts!",
-      400
-    );
-    return next(error);
-  }
-
-  if (whoRequested.status === "blocked") {
-    const error = new HttpError("Your account is blocked!", 400);
-    return next(error);
-  }
-
   const convertedUsers = users.map((user) => mongoose.Types.ObjectId(user));
 
-  let user, usersToUpdate;
+  let usersToUpdate;
   try {
     usersToUpdate = await User.find({
       _id: {
@@ -99,30 +98,35 @@ const updateUsersAccounts = async (req, res, next) => {
     await sess.commitTransaction();
   } catch (err) {
     const error = new HttpError(
-      "Something went wrong, could not delete users accounts.",
+      "Something went wrong, could not update users accounts",
       500
     );
     return next(error);
   }
 
-  res.status(200).json({ message: "Users have been updated!" });
+  res.status(200).json({ message: "Users have been updated" });
 };
 
 const deleteUsers = async (req, res, next) => {
+  const errors = validationResult(req);
   const { users } = req.body;
   const { userId: loggedUserId } = req.userData;
+
+  if (!errors.isEmpty()) {
+    return next(new HttpError("No user has been selected", 422));
+  }
 
   let whoRequested;
   try {
     whoRequested = await User.findById(loggedUserId, "status userType");
   } catch (err) {
-    const error = new HttpError("Deleting user failed!", 500);
+    const error = new HttpError("Deleting user(s) failed!", 500);
     return next(error);
   }
 
   if (!whoRequested?.userType || whoRequested?.userType !== "admin") {
     const error = new HttpError(
-      "You are not allowed to delete user account!",
+      "You are not allowed to delete user(s) account(s)",
       400
     );
     return next(error);
@@ -144,7 +148,7 @@ const deleteUsers = async (req, res, next) => {
     }).populate("collections", "id");
   } catch (err) {
     const error = new HttpError(
-      "Something went wrong, could not delete user account!",
+      "Something went wrong, could not delete user(s) account(s)",
       500
     );
     return next(error);
@@ -152,7 +156,7 @@ const deleteUsers = async (req, res, next) => {
 
   if (!usersToDelete.length) {
     const error = new HttpError(
-      "Something went wrong, could not find user for provided ID!",
+      "Something went wrong, could not find user(s) for provided IDs!",
       404
     );
     return next(error);
@@ -179,7 +183,7 @@ const deleteUsers = async (req, res, next) => {
     await sess.commitTransaction();
   } catch (err) {
     const error = new HttpError(
-      "Something went wrong, could not delete users accounts.",
+      "Something went wrong, could not delete user(s) accounts(s)",
       500
     );
     return next(error);
@@ -187,7 +191,7 @@ const deleteUsers = async (req, res, next) => {
 
   res
     .status(200)
-    .json({ message: "Users accounts have been deleted successfully!" });
+    .json({ message: "User(s) account(s) have been deleted successfully!" });
 };
 
 exports.deleteUsers = deleteUsers;

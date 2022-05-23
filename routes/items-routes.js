@@ -10,6 +10,10 @@ router.get("/item/:itemId", itemsControllers.getItemById);
 
 router.get("/getLatestItems", itemsControllers.getLatestItems);
 
+router.get("/getCloudData", itemsControllers.getCloudData);
+
+router.get("/getItemsByTag/:tag", itemsControllers.getItemsByTag);
+
 router.get(
   "/getFullTextSearchResults/:query",
   [check("query").trim().isLength({ min: 1 })],

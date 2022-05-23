@@ -316,6 +316,7 @@ const getCollectionById = async (req, res, next) => {
 
 const getLargestCollections = async (req, res, next) => {
   let largestCollections;
+
   try {
     largestCollections = await Collection.find(
       {},
@@ -327,7 +328,7 @@ const getLargestCollections = async (req, res, next) => {
       .limit(5)
       .populate("author", "username");
   } catch (err) {
-    const error = new HttpError("Fetching latest items failed!", 500);
+    const error = new HttpError("Fetching largest collections failed!", 500);
     next(error);
   }
 

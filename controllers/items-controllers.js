@@ -397,6 +397,7 @@ const removeLike = async (req, res, next) => {
 const getLatestItems = async (req, res, next) => {
   let latestItems;
   let authorsUsernames = [];
+
   try {
     latestItems = await CollectionItem.find({}, "name")
       .sort({
@@ -427,6 +428,65 @@ const getLatestItems = async (req, res, next) => {
 
   res.status(201).json({
     latestItems: convertedItems,
+  });
+};
+
+const getCloudData = async (req, res, next) => {
+  let itemsTags;
+
+  try {
+    itemsTags = await CollectionItem.find({}, "tags");
+  } catch (err) {
+    const error = new HttpError("Fetching latest items failed!", 500);
+    next(error);
+  }
+
+  const convertedTags = itemsTags.flatMap(({ tags }) => tags);
+
+  res.status(201).json({
+    tags: convertedTags,
+  });
+};
+
+const getItemsByTag = async (req, res, next) => {
+  let itemsByTag;
+  let authorsUsernames = [];
+
+  const { tag } = req.params;
+
+  if (!tag) {
+    const error = new HttpError("No tag was provided", 404);
+    return next(error);
+  }
+
+  try {
+    itemsByTag = await CollectionItem.find({ tags: tag }, "name").populate(
+      "belongsToCollection",
+      "collectionName author"
+    );
+    const authors = itemsByTag.map(
+      ({ belongsToCollection }) => belongsToCollection.author
+    );
+    for (const author of authors) {
+      const user = await User.findById(author.toString(), "username");
+      authorsUsernames.push(user);
+    }
+  } catch (err) {
+    const error = new HttpError("Fetching items by tag failed!", 500);
+    next(error);
+  }
+
+  const convertedItems = itemsByTag.map(
+    ({ id, name, belongsToCollection }, index) => ({
+      firstHeading: name,
+      id,
+      collectionName: belongsToCollection.collectionName,
+      author: authorsUsernames[index].username,
+    })
+  );
+
+  res.status(201).json({
+    items: convertedItems,
   });
 };
 
@@ -462,6 +522,7 @@ const getFullTextSearchResults = async (req, res, next) => {
     id: _id.toString(),
     name,
   }));
+  console.log("test");
 
   res.status(201).json({
     results: convertedItems,
@@ -477,3 +538,5 @@ exports.likeItem = likeItem;
 exports.removeLike = removeLike;
 exports.getLatestItems = getLatestItems;
 exports.getFullTextSearchResults = getFullTextSearchResults;
+exports.getCloudData = getCloudData;
+exports.getItemsByTag = getItemsByTag;
