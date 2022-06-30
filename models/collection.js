@@ -8,6 +8,7 @@ const collectionSchema = new Schema({
   collectionDescription: { type: String, required: true },
   collectionTopic: { type: String, required: true },
   collectionCustomItem: { type: Object, required: true },
+  collectionImage: { type: String },
   items: [
     { type: mongoose.Types.ObjectId, required: true, ref: "CollectionItem" },
   ],

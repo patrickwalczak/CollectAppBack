@@ -9,6 +9,54 @@ const createCollection = async (req, res, next) => {
   const errors = validationResult(req);
   const { userId: whoCreates } = req.userData;
   const { userId } = req.params;
+
+  const {
+    customTextFieldsNames,
+    customNumberFieldsNames,
+    customMultilineTextFieldsNames,
+    customDateFieldsNames,
+    customBooleanFieldsNames,
+    collectionName,
+    collectionDescription,
+    collectionTopic,
+  } = req.body;
+
+  const checkCustomFieldNames = (valueToTest) => {
+    if (Array.isArray(valueToTest)) {
+      return valueToTest;
+    }
+
+    if (!valueToTest.length) {
+      return [];
+    }
+    if (!!valueToTest.length) {
+      return [valueToTest];
+    }
+
+    return next(
+      new HttpError(
+        "Invalid collection data was passed, please check your data.",
+        422
+      )
+    );
+  };
+
+  const testedCustomTextFieldsNames = checkCustomFieldNames(
+    customTextFieldsNames
+  );
+  const testedCustomNumberFieldsNames = checkCustomFieldNames(
+    customNumberFieldsNames
+  );
+  const testedCustomMultilineTextFieldsNames = checkCustomFieldNames(
+    customMultilineTextFieldsNames
+  );
+  const testedCustomDateFieldsNames = checkCustomFieldNames(
+    customDateFieldsNames
+  );
+  const testedCustomBooleanFieldsNames = checkCustomFieldNames(
+    customBooleanFieldsNames
+  );
+
   if (!errors.isEmpty()) {
     return next(
       new HttpError(
@@ -21,17 +69,6 @@ const createCollection = async (req, res, next) => {
   if (!userId) {
     return next(new HttpError("User ID was not provided!", 400));
   }
-
-  const {
-    customTextFieldsNames,
-    customNumberFieldsNames,
-    customMultilineTextFieldsNames,
-    customDateFieldsNames,
-    customBooleanFieldsNames,
-    collectionName,
-    collectionDescription,
-    collectionTopic,
-  } = req.body;
 
   let creator;
   try {
@@ -87,12 +124,13 @@ const createCollection = async (req, res, next) => {
     collectionName,
     collectionDescription,
     collectionTopic,
+    collectionImage: req?.file?.path || "",
     collectionCustomItem: {
-      textFields: customTextFieldsNames,
-      numberFields: customNumberFieldsNames,
-      multilineTextFields: customMultilineTextFieldsNames,
-      dateFields: customDateFieldsNames,
-      booleanFields: customBooleanFieldsNames,
+      textFields: testedCustomTextFieldsNames,
+      numberFields: testedCustomNumberFieldsNames,
+      multilineTextFields: testedCustomMultilineTextFieldsNames,
+      dateFields: testedCustomDateFieldsNames,
+      booleanFields: testedCustomBooleanFieldsNames,
     },
     author: foundUser,
     items: [],

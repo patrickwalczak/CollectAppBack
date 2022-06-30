@@ -4,6 +4,8 @@ const { check } = require("express-validator");
 const collectionsController = require("../controllers/collections-controllers");
 const checkAuth = require("../middleware/check-auth");
 
+const uploadImage = require("../middleware/uploadImage");
+
 const router = express.Router();
 
 router.get("/user/:userId", collectionsController.getCollectionsByUserId);
@@ -22,15 +24,12 @@ router.use(checkAuth);
 
 router.post(
   "/:userId/createCollection",
+  uploadImage.single("image"),
+
   [
     check("collectionName").trim().isLength({ min: 3, max: 25 }),
     check("collectionDescription").trim().isLength({ min: 1, max: 300 }),
     check("collectionTopic").trim().not().isEmpty(),
-    check("customBooleanFieldsNames").isArray(),
-    check("customDateFieldsNames").isArray(),
-    check("customMultilineTextFieldsNames").isArray(),
-    check("customNumberFieldsNames").isArray(),
-    check("customTextFieldsNames").isArray(),
   ],
   collectionsController.createCollection
 );
