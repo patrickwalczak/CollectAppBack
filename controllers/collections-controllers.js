@@ -122,6 +122,8 @@ const createCollection = async (req, res, next) => {
     return next(error);
   }
 
+  console.log(req?.file?.path);
+
   const createdCollection = new Collection({
     collectionName,
     collectionDescription,
