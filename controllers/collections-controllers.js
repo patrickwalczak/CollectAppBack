@@ -5,6 +5,8 @@ const User = require("../models/user");
 const Collection = require("../models/collection");
 const CollectionItem = require("../models/collectionItem");
 
+const fs = require("fs");
+
 const createCollection = async (req, res, next) => {
   const errors = validationResult(req);
   const { userId: whoCreates } = req.userData;
@@ -298,6 +300,8 @@ const deleteCollection = async (req, res, next) => {
     return next(error);
   }
 
+  const imagePath = collection.collectionImage;
+
   try {
     const sess = await mongoose.startSession();
     sess.startTransaction();
@@ -315,6 +319,8 @@ const deleteCollection = async (req, res, next) => {
     );
     return next(error);
   }
+
+  fs.unlink(imagePath, (err) => console.log(err));
 
   res.status(200).json({ message: "Collection has been deleted!" });
 };
