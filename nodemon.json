@@ -1,8 +1,0 @@
-{
-    "env": {
-        "DB_USER": "Patryk",
-        "DB_PASSWORD": "Q927mqG2cGokBmsj",
-        "DB_NAME": "collectiomaniadb",
-        "JWT_KEY": "qxrfhbrdbu"
-    }
-}
