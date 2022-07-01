@@ -5,8 +5,6 @@ const User = require("../models/user");
 const Collection = require("../models/collection");
 const CollectionItem = require("../models/collectionItem");
 
-const fs = require("fs");
-
 const createCollection = async (req, res, next) => {
   const errors = validationResult(req);
   const { userId: whoCreates } = req.userData;
@@ -21,43 +19,9 @@ const createCollection = async (req, res, next) => {
     collectionName,
     collectionDescription,
     collectionTopic,
+    collectionImage,
+    collectionImageID,
   } = req.body;
-
-  const checkCustomFieldNames = (valueToTest) => {
-    if (Array.isArray(valueToTest)) {
-      return valueToTest;
-    }
-
-    if (!valueToTest.length) {
-      return [];
-    }
-    if (!!valueToTest.length) {
-      return [valueToTest];
-    }
-
-    return next(
-      new HttpError(
-        "Invalid collection data was passed, please check your data.",
-        422
-      )
-    );
-  };
-
-  const testedCustomTextFieldsNames = checkCustomFieldNames(
-    customTextFieldsNames
-  );
-  const testedCustomNumberFieldsNames = checkCustomFieldNames(
-    customNumberFieldsNames
-  );
-  const testedCustomMultilineTextFieldsNames = checkCustomFieldNames(
-    customMultilineTextFieldsNames
-  );
-  const testedCustomDateFieldsNames = checkCustomFieldNames(
-    customDateFieldsNames
-  );
-  const testedCustomBooleanFieldsNames = checkCustomFieldNames(
-    customBooleanFieldsNames
-  );
 
   if (!errors.isEmpty()) {
     return next(
@@ -122,19 +86,18 @@ const createCollection = async (req, res, next) => {
     return next(error);
   }
 
-  console.log(req?.file?.path);
-
   const createdCollection = new Collection({
     collectionName,
     collectionDescription,
     collectionTopic,
-    collectionImage: req?.file?.path || "",
+    collectionImage: collectionImage || "",
+    collectionImageID: collectionImageID || "",
     collectionCustomItem: {
-      textFields: testedCustomTextFieldsNames,
-      numberFields: testedCustomNumberFieldsNames,
-      multilineTextFields: testedCustomMultilineTextFieldsNames,
-      dateFields: testedCustomDateFieldsNames,
-      booleanFields: testedCustomBooleanFieldsNames,
+      textFields: customTextFieldsNames,
+      numberFields: customNumberFieldsNames,
+      multilineTextFields: customMultilineTextFieldsNames,
+      dateFields: customDateFieldsNames,
+      booleanFields: customBooleanFieldsNames,
     },
     author: foundUser,
     items: [],
@@ -302,8 +265,6 @@ const deleteCollection = async (req, res, next) => {
     return next(error);
   }
 
-  const imagePath = collection.collectionImage;
-
   try {
     const sess = await mongoose.startSession();
     sess.startTransaction();
@@ -321,8 +282,6 @@ const deleteCollection = async (req, res, next) => {
     );
     return next(error);
   }
-
-  fs.unlink(imagePath, (err) => console.log(err));
 
   res.status(200).json({ message: "Collection has been deleted!" });
 };

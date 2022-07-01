@@ -1,6 +1,5 @@
 const express = require("express");
 const path = require("path");
-const fs = require("fs");
 
 const bodyParser = require("body-parser");
 
@@ -27,8 +26,6 @@ const httpServer = createServer(app);
 app.use(cors());
 
 app.use(bodyParser.json());
-
-app.use("/uploads", express.static(path.join("uploads")));
 
 const io = new Server(httpServer, {
   cors: {
@@ -65,13 +62,6 @@ app.use((req, res, next) => {
 });
 
 app.use((error, req, res, next) => {
-  if (req.file) {
-    fs.unlink(req.file.path, (err) => {
-      console.log(req.file);
-      console.log(err);
-    });
-  }
-
   if (res.headerSent) {
     return next(error);
   }
