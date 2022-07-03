@@ -325,7 +325,7 @@ const getLargestCollections = async (req, res, next) => {
   try {
     largestCollections = await Collection.find(
       {},
-      "id collectionName numberOfItems"
+      "id collectionName numberOfItems collectionImage"
     )
       .sort({
         numberOfItems: -1,
@@ -338,11 +338,13 @@ const getLargestCollections = async (req, res, next) => {
   }
 
   const convertedCollections = largestCollections.map(
-    ({ id, author, collectionName, numberOfItems }) => ({
+    ({ id, author, collectionName, numberOfItems, collectionImage }) => ({
       id,
       author: author.username,
+      authorID: author.id,
       collectionName,
       firstHeading: numberOfItems,
+      collectionImage,
     })
   );
 
